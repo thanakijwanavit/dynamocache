@@ -1,2 +1,3 @@
 pytest
 pynamodb-dax
+typing-extensions

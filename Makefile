@@ -1,4 +1,5 @@
 .PHONY: test
 
 test:
-	pytest test
+	pytest --cov src
+	#pytest test

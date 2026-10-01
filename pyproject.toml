@@ -4,19 +4,79 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dynamocache"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
-  { name="nic wanavit", email="nwanavit@hatari.cc" },
+  { name = "nic wanavit", email = "nwanavit@hatari.cc" },
 ]
-description = "a wrapper to cache into dynamodb"
+description = "Cache Python function results in DynamoDB, accelerated by DAX"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+keywords = ["dynamodb", "dax", "cache", "memoize", "aws"]
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
+dependencies = [
+    "boto3>=1.26",
+]
+
+[project.optional-dependencies]
+# DAX mode requires AWS's official data-plane client. It is an extra rather than
+# a core dependency so that `pip install dynamocache` always succeeds even where
+# amazon-dax-client has no matching wheel; direct DynamoDB mode needs only boto3.
+dax = [
+    "amazon-dax-client>=2.0",
+]
+dev = [
+    "pytest>=7",
+    "pytest-cov",
+    "pytest-timeout",
+    "mypy",
+    "ruff",
+    "boto3-stubs[dynamodb]",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/thanakijwanavit/pynamocache"
-"Bug Tracker" = "https://github.com/thanakijwanavit/pynamocache/issues"
+"Homepage" = "https://github.com/thanakijwanavit/dynamocache"
+"Bug Tracker" = "https://github.com/thanakijwanavit/dynamocache/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dynamocache"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "integration: tests that hit real AWS/DAX (opt-in; require credentials)",
+]
+# Integration tests are excluded by default; run them with `-m integration`.
+addopts = "-m 'not integration'"
+
+[tool.mypy]
+python_version = "3.9"
+packages = ["dynamocache"]
+mypy_path = "src"
+strict = true
+
+# boto3 is dynamically typed and amazon-dax-client is an optional extra that may
+# not be installed; neither ships importable stubs for the lazy imports here.
+[[tool.mypy.overrides]]
+module = ["boto3", "amazon_dax_client"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

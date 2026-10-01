@@ -1,0 +1,46 @@
+{
+  "name": "daxcache",
+  "version": "0.1.0",
+  "description": "Cache function results in DynamoDB, accelerated by DAX",
+  "keywords": ["dynamodb", "dax", "cache", "memoize", "aws"],
+  "license": "MIT",
+  "author": "Nic Wanavit <nwanavit@hatari.cc>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thanakijwanavit/dynamocache",
+    "directory": "js"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src test"
+  },
+  "dependencies": {
+    "@amazon-dax-sdk/lib-dax": "^3.0.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

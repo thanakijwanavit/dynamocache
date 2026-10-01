@@ -1,0 +1,50 @@
+name: Integration
+
+# Opt-in integration tests against real AWS. These require credentials, so they
+# run only on pushes to main and manual dispatch — never on fork PRs, which
+# cannot access repository secrets.
+#
+# NOTE: DAX is reachable only from inside its VPC. This workflow exercises the
+# direct DynamoDB code path (shared with DAX except for the data-plane client);
+# verify true DAX behavior from an in-VPC runner before releases. To cover DAX
+# here, run this job on a self-hosted runner attached to the cluster's VPC and
+# set DYNAMOCACHE_DAX_ENDPOINT.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  integration:
+    name: Integration (direct DynamoDB)
+    runs-on: ubuntu-latest
+    # Skip on forks, which have no access to secrets.
+    if: github.repository == 'thanakijwanavit/dynamocache'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Integration tests
+        env:
+          DYNAMOCACHE_INTEGRATION: "1"
+          DYNAMOCACHE_TABLE: ${{ vars.DYNAMOCACHE_TABLE || 'dynamocache-itest' }}
+          DYNAMOCACHE_DAX_ENDPOINT: ${{ vars.DYNAMOCACHE_DAX_ENDPOINT }}
+        run: pytest -m integration -v

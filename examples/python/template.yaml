@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example Dynamocache deployment: a Lambda function inside a VPC using a DAX
+  cluster to accelerate a DynamoDB-backed function cache.
+
+Parameters:
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Private subnets (in the DAX cluster's VPC) for the Lambda.
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Security groups allowing the Lambda to reach DAX on port 8111.
+  DaxEndpoint:
+    Type: String
+    Description: The DAX cluster endpoint (dax://...).
+
+Resources:
+  CacheTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: dynamocache-example
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: key
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  ReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_handler.handler
+      Runtime: python3.12
+      Timeout: 10
+      MemorySize: 256
+      Environment:
+        Variables:
+          CACHE_TABLE: !Ref CacheTable
+          DAX_ENDPOINT: !Ref DaxEndpoint
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds: !Ref SecurityGroupIds
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CacheTable
+        # DAX data-plane access for the cluster.
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dax:GetItem
+                - dax:PutItem
+                - dax:BatchGetItem
+                - dax:BatchWriteItem
+              Resource: "*"
+
+Outputs:
+  FunctionName:
+    Value: !Ref ReportFunction
+  TableName:
+    Value: !Ref CacheTable
